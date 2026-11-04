@@ -1,0 +1,60 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_haskell//haskell:defs.bzl", "haskell_library")
+load("//third_party/haskell/hspec-discover:build_defs.bzl", "hspec_test")
+load("//tools/project:build_defs.bzl", "project")
+
+project(license = "gpl3-https")
+
+cc_library(
+    name = "audio",
+    srcs = ["cbits/audio.c"],
+    hdrs = ["cbits/audio.h"],
+    deps = ["@opus"],
+)
+
+cc_library(
+    name = "video",
+    srcs = ["cbits/video.c"],
+    hdrs = ["cbits/video.h"],
+    deps = ["@ffmpeg"],
+)
+
+haskell_library(
+    name = "hs-toxav",
+    srcs = glob([
+        "src/**/*.hs",
+        "native/**/*.hs",
+    ]),
+    ghcopts = ["-j4"],
+    src_strip_prefix = "src",
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
+    version = "0.0.1",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":audio",
+        ":video",
+        "//third_party/haskell:base",
+        "//third_party/haskell:binary",
+        "//third_party/haskell:bytestring",
+        "//third_party/haskell:containers",
+        "//third_party/haskell:random",
+        "//third_party/haskell:vector",
+    ],
+)
+
+hspec_test(
+    name = "testsuite",
+    size = "medium",
+    deps = [
+        ":hs-toxav",
+        "//third_party/haskell:QuickCheck",
+        "//third_party/haskell:base",
+        "//third_party/haskell:bytestring",
+        "//third_party/haskell:containers",
+        "//third_party/haskell:hspec",
+        "//third_party/haskell:vector",
+    ],
+)

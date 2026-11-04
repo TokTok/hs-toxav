@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>toxav call test</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { color-scheme: light dark; --bg: #fff; --fg: #1b1b1b; --muted: #666; --line: #ddd; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #161616; --fg: #eee; --muted: #999; --line: #333; } }
+    body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.4 system-ui, sans-serif; }
+    main { max-width: 1000px; margin: 0 auto; }
+    .views { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    figure { margin: 0; }
+    video, canvas { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #000; border-radius: 8px; }
+    figcaption, #stats, #delays, #playout { color: var(--muted); font-size: 13px; }
+    #delays { white-space: pre-line; margin: 0 0 4px; }
+    #playout { margin: 0 0 16px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+    pre { border-top: 1px solid var(--line); padding-top: 8px; font-size: 12px; white-space: pre-wrap; max-height: 40vh; overflow: auto; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>toxav call test</h1>
+  <p>A call from one ToxAV to another in this page: the camera and microphone go into the caller, and the callee shows and plays what it receives.</p>
+  <div class="controls">
+    <button id="start">Start the call</button>
+    <button id="copy">Copy log</button>
+    <button id="copy-delays">Copy delays</button>
+    <label><input type="checkbox" id="hear"> Hear the callee (use headphones)</label>
+    <label><input type="checkbox" id="echo" checked> Echo cancellation</label>
+    <label><input type="checkbox" id="sync" checked> Lip sync</label>
+    <label>Play through <select id="output"><option value="webaudio">Web Audio</option><option value="element">an audio element</option></select></label>
+    <span id="stats"></span>
+  </div>
+  <p id="delays"></p>
+  <p id="playout"></p>
+  <div class="views">
+    <figure><video id="camera" autoplay muted playsinline></video><figcaption>Camera, into the caller</figcaption></figure>
+    <figure><canvas id="received"></canvas><figcaption>What the callee receives</figcaption></figure>
+  </div>
+  <pre id="log"></pre>
+</main>
+<script type="module" src="call.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+load("@rules_haskell//haskell:defs.bzl", "haskell_binary")
+
+haskell_binary(
+    name = "tox-av-peer",
+    srcs = ["tox-av-peer.hs"],
+    ghcopts = ["-j4"],
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
+    deps = [
+        "//hs-toxav",
+        "//hs-toxcore:tox-application",
+        "//hs-toxcore:tox-crypto",
+        "//hs-toxcore:tox-network",
+        "//third_party/haskell:base",
+        "//third_party/haskell:base16-bytestring",
+        "//third_party/haskell:bytestring",
+        "//third_party/haskell:saltine",
+        "//third_party/haskell:vector",
+    ],
+)
+
+[sh_test(
+    name = "c_av_%s_test" % mode.replace("-", "_"),
+    size = "medium",
+    srcs = ["c-av-test.sh"],
+    args = [
+        "$(location //hs-toxcore/tools:tox-c-peer)",
+        "$(location :tox-av-peer)",
+        mode,
+    ],
+    data = [
+        ":tox-av-peer",
+        "//hs-toxcore/tools:tox-c-peer",
+    ],
+    tags = [
+        "haskell",
+        "no-cross",
+        "no-windows",
+    ],
+) for mode in [
+    "hs-call",
+    "c-call",
+]]
