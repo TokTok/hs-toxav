@@ -27,6 +27,7 @@ module Tox.AV.Session
   , wantsKeyFrame
   , videoCodec
   , encoderFailed
+  , failedEncoders
   , bitRates
   , VideoStats (..)
   , videoStats
@@ -90,7 +91,7 @@ data Call = Call
   , callHeard      :: Word64
     -- ^ When the friend last reported, or the call began.
   , callPeerH264   :: Bool
-  , callFailed     :: Set.Set Codec -- ^ Encoders that didn't work.
+  , callFailed     :: Map.Map Codec String -- ^ Encoders that didn't work, and why.
   }
 
 -- | How the friend's video came, this call. A frame decoded after a lost one
@@ -183,7 +184,8 @@ losslessIds, lossyIds :: [Word8]
 losslessIds = [msiId, videoControlId]
 lossyIds = [RTP.packetId Audio, RTP.packetId Video, Bandwidth.packetId]
 
--- | Key frames start every call, as C toxcore has no way to ask for one.
+-- | Each call starts with this many key frames, as C toxcore has no way to
+-- ask for one.
 startKeyFrames :: Int
 startKeyFrames = 7
 
@@ -244,7 +246,7 @@ newCall now phase self peer rates = Call
   , callLastReport = Nothing
   , callHeard = now
   , callPeerH264 = False
-  , callFailed = Set.empty
+  , callFailed = Map.empty
   }
 
 capabilities :: BitRates -> Capabilities
@@ -399,8 +401,8 @@ receivePiece f piece s = case Map.lookup f (sessionCalls s) of
         Video
           | maybe True (\l -> RTP.ahead l sequ > 0) (callLastVideo c) ->
               let c' = videoCame (maybe 0 (\l -> RTP.ahead l sequ - 1) (callLastVideo c)) (RTP.hasFlags RTP.keyFrame flags) time c { callLastVideo = Just sequ }
-                  -- A key frame ends the smear. C toxcore's clients don't
-                  -- know the asking, and ignore it.
+                  -- A key frame ends the smear. C toxcore's clients ignore
+                  -- the request.
                   ask = [SendLossless f (BS.pack [videoControlId, askKeyFrame]) | isNothing (callSmearing c), isJust (callSmearing c')]
               in (c', outs ++ ask ++ [VideoIn f (RTP.codecOf flags) time bytes])
           | otherwise -> (c, outs)
@@ -556,13 +558,17 @@ videoCodec f s
   | Set.member H264 (sessionEncoders s)
   , Just c <- Map.lookup f (sessionCalls s)
   , callPeerH264 c
-  , not (Set.member H264 (callFailed c)) = H264
+  , not (Map.member H264 (callFailed c)) = H264
   | otherwise = VP8
 
 -- | The encoder for the friend's call couldn't be made or didn't encode.
-encoderFailed :: Ord f => f -> Codec -> Session f -> Session f
-encoderFailed f codec s = s
-  { sessionCalls = Map.adjust (\c -> c { callFailed = Set.insert codec (callFailed c) }) f (sessionCalls s) }
+encoderFailed :: Ord f => f -> Codec -> String -> Session f -> Session f
+encoderFailed f codec why s = s
+  { sessionCalls = Map.adjust (\c -> c { callFailed = Map.insert codec why (callFailed c) }) f (sessionCalls s) }
+
+-- | The encoders that didn't work this call, and why.
+failedEncoders :: Ord f => f -> Session f -> [(Codec, String)]
+failedEncoders f = maybe [] (Map.toList . callFailed) . Map.lookup f . sessionCalls
 
 -- | Nothing when not in a call.
 bitRates :: Ord f => f -> Session f -> Maybe BitRates

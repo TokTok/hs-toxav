@@ -33,8 +33,8 @@ import           Tox.AV.Codec.Types           (Close (..), Pcm, managed)
 data OpusEncoderStruct
 data OpusDecoderStruct
 
--- Encoding, decoding and opening a codec take long, so those calls are safe:
--- an unsafe one holds up every other Haskell thread until it returns.
+-- opus_encode and opus_decode take long, so they are safe calls: an unsafe
+-- one holds up every other Haskell thread until it returns.
 foreign import ccall unsafe "hstoxav_opus_encoder_new"
   c_opus_encoder_new :: Int32 -> CInt -> Int32 -> IO (Ptr OpusEncoderStruct)
 foreign import ccall unsafe "hstoxav_opus_encoder_set_bit_rate"

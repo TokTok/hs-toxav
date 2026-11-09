@@ -158,5 +158,6 @@ spec = do
   it "sends H.264 to a friend that decodes it, as both say when the call starts" $ do
     let w = act B (answer 0 A both) (act A (call 0 B both) (start [VP8, H264]))
     (videoCodec B (worldSessions w Map.! A), videoCodec A (worldSessions w Map.! B)) `shouldBe` (H264, H264)
-    videoCodec B (encoderFailed B H264 (worldSessions w Map.! A)) `shouldBe` VP8
+    let failed = encoderFailed B H264 "broken" (worldSessions w Map.! A)
+    (videoCodec B failed, failedEncoders B failed) `shouldBe` (VP8, [(H264, "broken")])
     videoCodec B (worldSessions talking Map.! A) `shouldBe` VP8
